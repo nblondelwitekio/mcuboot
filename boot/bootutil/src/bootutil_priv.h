@@ -120,7 +120,7 @@ struct boot_status {
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |   Image OK    |           0xff padding (7 octets)             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                       MAGIC (16 octets)                       |
+ *  |                       MAGIC (32 octets)                       |
  *  |                                                               |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
@@ -128,7 +128,7 @@ struct boot_status {
  *      (`MCUBOOT_ENC_IMAGES`).
  */
 
-extern const uint32_t boot_img_magic[4];
+extern const uint32_t boot_img_magic[8];
 
 #ifdef MCUBOOT_IMAGE_NUMBER
 #define BOOT_IMAGE_NUMBER          MCUBOOT_IMAGE_NUMBER

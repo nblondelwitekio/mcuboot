@@ -70,7 +70,7 @@ extern "C" {
 /** Swapping encountered an unrecoverable error */
 #define BOOT_SWAP_TYPE_PANIC    0xff
 
-#define BOOT_MAX_ALIGN          8
+#define BOOT_MAX_ALIGN          32
 
 #define BOOT_MAGIC_GOOD     1
 #define BOOT_MAGIC_BAD      2
@@ -205,7 +205,7 @@ boot_read_swap_state_by_id(int flash_area_id, struct boot_swap_state *state);
 #define BOOT_MAGIC_ARR_SZ \
     (sizeof boot_img_magic / sizeof boot_img_magic[0])
 
-extern const uint32_t boot_img_magic[4];
+extern const uint32_t boot_img_magic[8];
 
 #ifdef __cplusplus
 }

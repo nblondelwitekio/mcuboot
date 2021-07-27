@@ -43,7 +43,7 @@ IMAGE_HEADER_SIZE = 32
 BIN_EXT = "bin"
 INTEL_HEX_EXT = "hex"
 DEFAULT_MAX_SECTORS = 128
-MAX_ALIGN = 8
+MAX_ALIGN = 32
 DEP_IMAGES_KEY = "images"
 DEP_VERSIONS_KEY = "versions"
 MAX_SW_TYPE_LENGTH = 12  # Bytes
@@ -81,6 +81,10 @@ TLV_INFO_MAGIC = 0x6907
 TLV_PROT_INFO_MAGIC = 0x6908
 
 boot_magic = bytes([
+    0x77, 0xc2, 0x95, 0xf3,
+    0x60, 0xd2, 0xef, 0x7f,
+    0x35, 0x52, 0x50, 0x0f,
+    0x2c, 0xb6, 0x79, 0x80, 
     0x77, 0xc2, 0x95, 0xf3,
     0x60, 0xd2, 0xef, 0x7f,
     0x35, 0x52, 0x50, 0x0f,
@@ -502,11 +506,11 @@ class Image():
     def _trailer_size(self, write_size, max_sectors, overwrite_only, enckey,
                       save_enctlv, enctlv_len):
         # NOTE: should already be checked by the argument parser
-        magic_size = 16
+        magic_size = 32
         if overwrite_only:
             return MAX_ALIGN * 2 + magic_size
         else:
-            if write_size not in set([1, 2, 4, 8]):
+            if write_size not in set([1, 2, 4, 8, 16, 32]):
                 raise click.BadParameter("Invalid alignment: {}".format(
                     write_size))
             m = DEFAULT_MAX_SECTORS if max_sectors is None else max_sectors

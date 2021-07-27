@@ -61,6 +61,10 @@ const uint32_t boot_img_magic[] = {
     0x7fefd260,
     0x0f505235,
     0x8079b62c,
+    0xf395c277,
+    0x7fefd260,
+    0x0f505235,
+    0x8079b62c,
 };
 
 #define BOOT_MAGIC_ARR_SZ \
