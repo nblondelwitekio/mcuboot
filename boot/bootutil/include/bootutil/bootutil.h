@@ -66,6 +66,12 @@ struct image_trailer {
     uint8_t magic[16];
 };
 
+/* Confirm a complete slot by writing the trailer flag
+ * copy_done, which must be done after a reboot for some board
+ * using XIP_REVERT.
+ */
+void confirm_slot_complete(uint32_t slot);
+
 /* you must have pre-allocated all the entries within this structure */
 fih_int boot_go(struct boot_rsp *rsp);
 

@@ -51,6 +51,10 @@ const struct boot_uart_funcs boot_funcs = {
 #include <arm_cleanup.h>
 #endif
 
+#ifdef CONFIG_SOC_STM32H743XX
+#include <stm32h7xx.h>
+#endif
+
 /* CONFIG_LOG_MINIMAL is the legacy Kconfig property,
  * replaced by CONFIG_LOG_MODE_MINIMAL.
  */
@@ -264,6 +268,33 @@ static void do_boot(struct boot_rsp *rsp)
 }
 #endif
 
+#ifdef CONFIG_SOC_STM32H743XX
+static void bank_swap(void)
+{
+    BOOT_LOG_INF("Starting Bank-Swap");
+    HAL_StatusTypeDef status;
+
+    /* Unlock flash options writing */
+    status = HAL_FLASH_OB_Unlock();
+    __ASSERT(status == HAL_OK, 
+        "Error: Can't unlock flash options writing.\n");
+
+    if(READ_BIT(FLASH->OPTSR_PRG, FLASH_OPTSR_SWAP_BANK_OPT) == 0) {
+        SET_BIT(FLASH->OPTSR_PRG, FLASH_OPTSR_SWAP_BANK_OPT);
+    } else {
+        CLEAR_BIT(FLASH->OPTSR_PRG, FLASH_OPTSR_SWAP_BANK_OPT);
+    }
+
+    /* Start the option byte change sequence */
+    status = HAL_FLASH_OB_Launch();
+    __ASSERT(status == HAL_OK, 
+        "Error: Can't start option byte change sequence.\n");
+
+    BOOT_LOG_INF("Swap requested: %d", 
+        READ_BIT(FLASH->OPTSR_PRG, FLASH_OPTSR_SWAP_BANK_OPT) == FLASH_OPTSR_SWAP_BANK_OPT);
+}
+#endif
+
 #if defined(CONFIG_LOG) && !defined(CONFIG_LOG_IMMEDIATE) &&\
     !defined(CONFIG_LOG_PROCESS_THREAD) && !ZEPHYR_LOG_MODE_MINIMAL
 /* The log internal thread for log processing can't transfer log well as has too
@@ -401,6 +432,11 @@ void main(void)
     }
 #endif
 
+#if defined(MCUBOOT_DIRECT_XIP_REVERT) || defined(MCUBOOT_DIRECT_XIP) 
+    BOOT_LOG_INF("Bank-Swap bit: %d", 
+        READ_BIT(FLASH->OPTCR, FLASH_OPTCR_SWAP_BANK) == FLASH_OPTCR_SWAP_BANK);
+#endif
+
     FIH_CALL(boot_go, fih_rc, &rsp);
     if (fih_not_eq(fih_rc, FIH_SUCCESS)) {
         BOOT_LOG_ERR("Unable to find bootable image");
@@ -412,7 +448,19 @@ void main(void)
 
     BOOT_LOG_INF("Jumping to the first image slot");
     ZEPHYR_BOOT_LOG_STOP();
+
+#ifdef CONFIG_SOC_STM32H743XX
+    if(rsp.br_image_off == 0x00120000) {
+        bank_swap();
+        HAL_NVIC_SystemReset();
+    } else {
+        /* The primary image shall be indicated as complete */
+        confirm_slot_complete(0);
+        do_boot(&rsp);
+    }
+#else
     do_boot(&rsp);
+#endif
 
     BOOT_LOG_ERR("Never should get here");
     while (1)

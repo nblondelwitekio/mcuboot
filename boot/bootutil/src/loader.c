@@ -2095,19 +2095,6 @@ boot_select_or_erase(struct boot_swap_state *state, uint32_t slot)
                 BOOT_LOG_DBG("The copy_done flag had an unexpected value. Its "
                              "value was neither 'set' nor 'unset', but 'bad'.");
             }
-            /*
-             * Set the copy_done flag, indicating that the image has been
-             * selected to boot. It can be set in advance, before even
-             * validating the image, because in case the validation fails, the
-             * entire image slot will be erased (including the trailer).
-             */
-            rc = boot_write_copy_done(fap);
-            if (rc != 0) {
-                BOOT_LOG_WRN("Failed to set copy_done flag of the image in "
-                             "the %s slot.", (slot == BOOT_PRIMARY_SLOT) ?
-                             "primary" : "secondary");
-                rc = 0;
-            }
         }
         flash_area_close(fap);
     }
@@ -2259,6 +2246,48 @@ boot_remove_image_from_sram(uint32_t img_dst, uint32_t img_sz)
 }
 #endif /* MCUBOOT_RAM_LOAD */
 
+void confirm_slot_complete(uint32_t slot)
+{
+    struct boot_swap_state state;
+    const struct flash_area *fap;
+    int fa_id;
+    int rc;
+
+    fa_id = flash_area_id_from_image_slot(slot);
+    rc = flash_area_open(fa_id, &fap);
+    assert(rc == 0);
+
+    memset(&state, 0, sizeof(struct boot_swap_state));
+    rc = boot_read_swap_state(fap, &state);
+    assert(rc == 0);
+
+    if (state.magic == BOOT_MAGIC_GOOD &&
+        (state.copy_done != BOOT_FLAG_SET ||
+         state.image_ok  == BOOT_FLAG_SET)) {
+
+        if (state.copy_done != BOOT_FLAG_SET) {
+            if (state.copy_done == BOOT_FLAG_BAD) {
+                BOOT_LOG_DBG("The copy_done flag had an unexpected value. Its "
+                             "value was neither 'set' nor 'unset', but 'bad'.");
+            }
+            /*
+             * Set the copy_done flag, indicating that the image has been
+             * selected to boot. It can be set in advance, before even
+             * validating the image, because in case the validation fails, the
+             * entire image slot will be erased (including the trailer).
+             */
+            rc = boot_write_copy_done(fap);
+            if (rc != 0) {
+                BOOT_LOG_WRN("Failed to set copy_done flag of the image in "
+                             "the %s slot.", (slot == BOOT_PRIMARY_SLOT) ?
+                             "primary" : "secondary");
+            }
+        }
+    }
+
+    flash_area_close(fap);
+}
+
 fih_int
 context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
 {
@@ -2328,6 +2357,7 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
                     selected_image_header = hdr;
                 }
             }
+            rc = 0;
 
 #ifdef MCUBOOT_DIRECT_XIP_REVERT
             rc = boot_select_or_erase(&slot_state, selected_slot);
